@@ -8,42 +8,28 @@ my %games = ( MAX_RED => 12,
             );
 
 *ARGV = *DATA unless @ARGV;
+
+my $sum;
 while(<>){
-  #print "\n$_";
+  print "\n$_";
   chomp;
 
   my @sets = split /[:;]/, $_;
   my $game = shift @sets;
 
   $game =~ s/Game\s(\d+)/$1/;
-  #print "$game\n";
+  print "$game\n";
 
+  my $possible = 1;
   foreach my $set (@sets){
     my @colorCnt = split /,/, $set;
     map { $_ =~ s/^\s*//;
 	  my ($cnt, $color) = split /\s/, $_ ;
 	  $games{$game}->{$color} += $cnt;
+	  $possible = 0 if ($cnt > $games{"MAX_" . uc($color)});
 	} @colorCnt;
   }
-}
-
-my $sum;
-foreach my $game (sort grep /\d+/, keys %games){
-  print "Game: $game\n";
-
-  my $possible = 1;
-  map { #print "\t$_ - $games{$game}->{$_}\n";
-	if ($games{$game}->{$_} <= $games{"MAX_" . uc($_)}){
-	  print "\tPossible ";
-	} else {
-	  $possible = 0;
-	  print "\tNot Possible ";
-	}
-	print "$_ $games{$game}->{$_} vs " . $games{"MAX_" . uc($_)} . "\n";
-     } sort keys %{$games{$game}};
-
   $sum += $game if ($possible);
-  # print "\t" . join ("\n\t", @sets) . "\n";
 }
 print "Total: $sum\n";
 
