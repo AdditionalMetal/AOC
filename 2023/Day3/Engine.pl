@@ -70,7 +70,7 @@ print "\n";
 print "Symbol Locations: " . join(" ", @symbols) . "\n";
 
 # Determine which numbers are engine parts...
-#  Need to also protect from over-counting...
+#  Need to also protect from over-counting... And this becomes crap...
 foreach my $symbol (@symbols){
   my ($R, $C) = split /:/, $symbol;
 
@@ -80,16 +80,24 @@ foreach my $symbol (@symbols){
   $remap{$symbol} = ();
 
   # Leading in Same Row
-  push @{$remap{$symbol}}, $remap{"${R}:" . ($C - 1) } if ( ($C >  1) and $remap{$R . ":" . ($C - 1) } =~ m/\d+/);
+  unless ( $C == 1 ){
+    push @{$remap{$symbol}}, $remap{"${R}:" . ($C - 1) } if ($remap{$R . ":" . ($C - 1) } =~ m/\d+/);
+  }
 
   # Trailing in Same Row
-  push @{$remap{$symbol}}, $remap{"${R}:" . ($C + 1) } if ( ($C < $c) and $remap{$R . ":" . ($C + 1) } =~ m/\d+/);
+  unless ( $C == $c){
+    push @{$remap{$symbol}}, $remap{"${R}:" . ($C + 1) } if ($remap{$R . ":" . ($C + 1) } =~ m/\d+/);
+  }
 
   # Upper in same column
-  push @{$remap{$symbol}}, $remap{($R-1) . ":${C}"}   if (($R >  1) and $remap{$R-1 . ":" . $C} =~ m/\d+/);
+  unless ($R == 1){
+    push @{$remap{$symbol}}, $remap{($R-1) . ":${C}"}   if ($remap{$R-1 . ":" . $C} =~ m/\d+/);
+  }
 
   # Lower in same column
-  push @{$remap{$symbol}}, $remap{($R+1) . ":${C}"}   if (($R < $r) and $remap{$R+1 . ":" . $C} =~ m/\d+/);
+  unless ($R == $r){
+    push @{$remap{$symbol}}, $remap{($R+1) . ":${C}"}   if ($remap{$R+1 . ":" . $C} =~ m/\d+/);
+  }
 
   # Leading Upper Diagnal
   unless ( $R == 1 and $C == 1){
