@@ -23,48 +23,67 @@ foreach my $i (1..$r){ # row
   foreach my $j (1..$c){ # column
     my $v = $map{"${i}:${j}"};
 
-    # replace individual digits with full number...
-    #   you only need to move forward in columns
-    #   and track if you already finished.
     if ($v =~ m/\d/i){
+      # replace individual digits with full number...
+      #   you only need to move forward in columns
+      #   and track if you already finished.
       my $num = '';
       my @store = ();
 
-      foreach my $J ($j..$c){ # going towards eol...
-	  # print "Already stored... $i:$J \n" and
-	  last if ($remap{"${i}:${J}"}); # already stored...
+      foreach my $J ($j..$c){
+	last if ($remap{"${i}:${J}"});
 
 	my $digit = $map{"${i}:${J}"};
 	if ($digit =~ m/\d/){
 	  $num =  $num . $digit;
 	  push @store, "${i}:${J}";
-	  #print "Preparing to store ${i}:${J} index...(now at @{store})\n";
 	} else {
 	  $remap{"${i}:${J}"} = $map{"${i}:${J}"};
 
-	  # store in remap...
-	  #print "********checking store: @store \n";
-	  map {#"print using $_ index\n";
-	       $remap{$_} = $num;
-	     } @store;
+	  map { $remap{$_} = $num; } @store;
 	  last;
 	}
+	map { $remap{$_} = $num; } @store;
       }
     } else {
       $remap{"${i}:${j}"} = $map{"${i}:${j}"};
-      #print "$v";
     }
   }
 }
 
 # print remap...
 foreach my $i (1..$r){ # row
-  print "$i : ";
+  print "$i: ";
   foreach my $j (1..$c){ # column
-    print $remap{"${i}:${j}"} . " " ;
+    #print "${i}:${j} -> " . $remap{"${i}:${j}"} . "\n" ;
+    #die "Arghh at $i and $j\n" unless $remap{"${i}:${j}"};
+    print $remap{"${i}:${j}"} . " ";
   }
   print "\n";
 }
+print "\n";
+
+# Now run through the remap array an look for "symbols"...
+my %moRemap = ();
+my @sym = ();
+foreach my $i (1..$r){ # row
+  print "$i : ";
+  foreach my $j (1..$c){ # column
+    if ($remap{"${i}:${j}"} =~ m/[^\.\d]/){ # symbol found...
+      # Check all spaces around...
+      push @sym, "${i}:${j}";
+      print "#";
+    } else {
+      print "${i}:${j}\n";
+      ($remap{"${i}:${j}"} =~ m/\d+/) ? print "N" : print ".";
+    }
+#    print $remap{"${i}:${j}"} . " " ;
+  }
+  print "\n";
+}
+
+print "Symbol Locations: " . join(" ", @sym) . "\n";
+
 __DATA__
 467..114..
 ...*......
