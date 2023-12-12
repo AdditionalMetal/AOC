@@ -1,4 +1,5 @@
 #!/bin/perl
+# This was a terrible approach...
 use strict;
 use diagnostics;
 
@@ -19,11 +20,12 @@ while(<>){
   }
 }
 
+my @symbols = ();
 foreach my $i (1..$r){ # row
   foreach my $j (1..$c){ # column
     my $v = $map{"${i}:${j}"};
 
-    if ($v =~ m/\d/i){
+    if ($v =~ m/\d/i){ # Number?
       # replace individual digits with full number...
       #   you only need to move forward in columns
       #   and track if you already finished.
@@ -45,44 +47,74 @@ foreach my $i (1..$r){ # row
 	}
 	map { $remap{$_} = $num; } @store;
       }
-    } else {
+    } else { # Not a number...
       $remap{"${i}:${j}"} = $map{"${i}:${j}"};
+
+      if ($v =~ m/[^\.\d]/){ # Symbol...
+	push @symbols, "${i}:${j}";
+      }
     }
   }
 }
 
-# print remap...
+# Print remap...
 foreach my $i (1..$r){ # row
   print "$i: ";
   foreach my $j (1..$c){ # column
-    #print "${i}:${j} -> " . $remap{"${i}:${j}"} . "\n" ;
-    #die "Arghh at $i and $j\n" unless $remap{"${i}:${j}"};
     print $remap{"${i}:${j}"} . " ";
   }
   print "\n";
 }
 print "\n";
 
-# Now run through the remap array an look for "symbols"...
-my %moRemap = ();
-my @sym = ();
-foreach my $i (1..$r){ # row
-  print "$i : ";
-  foreach my $j (1..$c){ # column
-    if ($remap{"${i}:${j}"} =~ m/[^\.\d]/){ # symbol found...
-      # Check all spaces around...
-      push @sym, "${i}:${j}";
-      print "#";
-    } else {
-      print "${i}:${j}\n";
-      ($remap{"${i}:${j}"} =~ m/\d+/) ? print "N" : print ".";
-    }
-#    print $remap{"${i}:${j}"} . " " ;
+print "Symbol Locations: " . join(" ", @symbols) . "\n";
+
+# Determine which numbers are engine parts...
+#  Need to also protect from over-counting...
+foreach my $symbol (@symbols){
+  my ($R, $C) = split /:/, $symbol;
+
+  print "**************************************************\n";
+  print "$symbol => $R -> $C => " . $remap{$symbol} . "\n";
+
+  $remap{$symbol} = ();
+
+  # Leading in Same Row
+  push @{$remap{$symbol}}, $remap{"${R}:" . ($C - 1) } if ( ($C >  1) and $remap{$R . ":" . ($C - 1) } =~ m/\d+/);
+
+  # Trailing in Same Row
+  push @{$remap{$symbol}}, $remap{"${R}:" . ($C + 1) } if ( ($C < $c) and $remap{$R . ":" . ($C + 1) } =~ m/\d+/);
+
+  # Upper in same column
+  push @{$remap{$symbol}}, $remap{($R-1) . ":${C}"}   if (($R >  1) and $remap{$R-1 . ":" . $C} =~ m/\d+/);
+
+  # Lower in same column
+  push @{$remap{$symbol}}, $remap{($R+1) . ":${C}"}   if (($R < $r) and $remap{$R+1 . ":" . $C} =~ m/\d+/);
+
+  # Leading Upper Diagnal
+  unless ( $R == 1 and $C == 1){
+    push @{$remap{$symbol}}, $remap{ ($R-1) .":". ($C-1) } if ( $remap{ ($R-1) .":". ($C-1) } =~ m/\d+/);
   }
+
+  # Leading Lower Diagnal
+  unless ( $R == $r and $C == 1){
+    push @{$remap{$symbol}}, $remap{ ($R+1) .":". ($C-1) } if ( $remap{ ($R+1) .":". ($C-1) } =~ m/\d+/);
+  }
+
+  # Trailing Upper Diagnal
+  unless ( $R == 1 and $C == $c){
+    push @{$remap{$symbol}}, $remap{ ($R-1) .":". ($C+1) } if ( $remap{ ($R-1) .":". ($C+1) } =~ m/\d+/);
+  }
+
+  # Trailing Lower Diagnal
+  unless ( $R == $r and $C == $c){
+    push @{$remap{$symbol}}, $remap{ ($R+1) .":". ($C+1) } if ( $remap{ ($R+1) .":". ($C+1) } =~ m/\d+/);
+  }
+
+  print "$symbol -> ";
+  print join(", ", @{$remap{$symbol}}) if ($remap{$symbol});
   print "\n";
 }
-
-print "Symbol Locations: " . join(" ", @sym) . "\n";
 
 __DATA__
 467..114..
