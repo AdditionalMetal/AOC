@@ -7,6 +7,7 @@ use diagnostics;
 
 my %map = ();
 my %remap = ();
+my %refmap = ();
 my ($r, $c) = (0,0);
 
 while(<>){
@@ -43,6 +44,7 @@ foreach my $i (1..$r){ # row
 	  $remap{"${i}:${J}"} = $map{"${i}:${J}"};
 
 	  map { $remap{$_} = $num; } @store;
+	  map { $refmap{$_} = \@store } @store;
 	  last;
 	}
 	map { $remap{$_} = $num; } @store;
@@ -68,55 +70,34 @@ foreach my $i (1..$r){ # row
 print "\n";
 
 print "Symbol Locations: " . join(" ", @symbols) . "\n";
+# print "Equivalences...\n";
+# map {print "$_ -> @{$refmap{$_}} \n"; } sort keys %refmap;
 
 # Determine which numbers are engine parts...
 #  Need to also protect from over-counting... And this becomes crap...
 foreach my $symbol (@symbols){
   my ($R, $C) = split /:/, $symbol;
 
-  print "**************************************************\n";
-  print "$symbol => $R -> $C => " . $remap{$symbol} . "\n";
+  #print "**************************************************\n";
+  #print "$symbol => $R -> $C => " . $remap{$symbol} . "\n";
 
   $remap{$symbol} = ();
 
-  # Leading in Same Row
-  unless ( $C == 1 ){
-    push @{$remap{$symbol}}, $remap{"${R}:" . ($C - 1) } if ($remap{$R . ":" . ($C - 1) } =~ m/\d+/);
-  }
+  my @LOCS = ( ($R + 0) . ":" . ($C - 1) , # Leading in Same Row
+	       ($R + 0) . ":" . ($C + 1) , # Trailing in Same Row
+	       ($R - 1) . ":" . ($C + 0) , # Upper in same column
+	       ($R + 1) . ":" . ($C + 0) , # Lower in same column
+	       ($R - 1) . ":" . ($C - 1) , # Leading Upper Diagnal
+	       ($R + 1) . ":" . ($C - 1) , # Leading Lower Diagnal
+	       ($R - 1) . ":" . ($C + 1) , # Trailing Upper Diagnal
+	       ($R + 1) . ":" . ($C + 1) , # Trailing Lower Diagnal
+	     );
 
-  # Trailing in Same Row
-  unless ( $C == $c){
-    push @{$remap{$symbol}}, $remap{"${R}:" . ($C + 1) } if ($remap{$R . ":" . ($C + 1) } =~ m/\d+/);
-  }
-
-  # Upper in same column
-  unless ($R == 1){
-    push @{$remap{$symbol}}, $remap{($R-1) . ":${C}"}   if ($remap{$R-1 . ":" . $C} =~ m/\d+/);
-  }
-
-  # Lower in same column
-  unless ($R == $r){
-    push @{$remap{$symbol}}, $remap{($R+1) . ":${C}"}   if ($remap{$R+1 . ":" . $C} =~ m/\d+/);
-  }
-
-  # Leading Upper Diagnal
-  unless ( $R == 1 and $C == 1){
-    push @{$remap{$symbol}}, $remap{ ($R-1) .":". ($C-1) } if ( $remap{ ($R-1) .":". ($C-1) } =~ m/\d+/);
-  }
-
-  # Leading Lower Diagnal
-  unless ( $R == $r and $C == 1){
-    push @{$remap{$symbol}}, $remap{ ($R+1) .":". ($C-1) } if ( $remap{ ($R+1) .":". ($C-1) } =~ m/\d+/);
-  }
-
-  # Trailing Upper Diagnal
-  unless ( $R == 1 and $C == $c){
-    push @{$remap{$symbol}}, $remap{ ($R-1) .":". ($C+1) } if ( $remap{ ($R-1) .":". ($C+1) } =~ m/\d+/);
-  }
-
-  # Trailing Lower Diagnal
-  unless ( $R == $r and $C == $c){
-    push @{$remap{$symbol}}, $remap{ ($R+1) .":". ($C+1) } if ( $remap{ ($R+1) .":". ($C+1) } =~ m/\d+/);
+  foreach my $loc (@LOCS){
+    if ($remap{$loc} and $remap{$loc} =~ m/\d/){
+      push @{$remap{$symbol}}, $remap{$loc};
+      map { $remap{$_} = 0 } @{$refmap{$loc}};
+    }
   }
 
   print "$symbol -> ";
@@ -124,7 +105,12 @@ foreach my $symbol (@symbols){
   print "\n";
 }
 
-__DATA__
+my $tot;
+foreach my $symbol (@symbols){
+  map {$tot += $_ } @{$remap{$symbol}};
+}
+print "Total: $tot\n";
+  __DATA__
 467..114..
 ...*......
 ..35..633.
