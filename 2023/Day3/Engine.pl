@@ -81,7 +81,7 @@ foreach my $symbol (@symbols){
   #print "**************************************************\n";
   #print "$symbol => $R -> $C => " . $remap{$symbol} . "\n";
 
-  $remap{$symbol} = ();
+  $remap{$symbol} = [$remap{$symbol}]; # Turn into an array???
 
   my @LOCS = ( ($R + 0) . ":" . ($C - 1) , # Leading in Same Row
 	       ($R + 0) . ":" . ($C + 1) , # Trailing in Same Row
@@ -105,12 +105,21 @@ foreach my $symbol (@symbols){
   print "\n";
 }
 
-my $tot;
+my ($tot, $gear) = (0,0);
 foreach my $symbol (@symbols){
+  my $op = shift @{$remap{$symbol}};
   map {$tot += $_ } @{$remap{$symbol}};
+
+  if ($op eq "*" and (2 == @{$remap{$symbol}})){
+    $gear += $remap{$symbol}->[0] * $remap{$symbol}->[1];
+  }
 }
+
+print "\n\n";
 print "Total: $tot\n";
-  __DATA__
+print "Gear: $gear\n";
+
+__DATA__
 467..114..
 ...*......
 ..35..633.
